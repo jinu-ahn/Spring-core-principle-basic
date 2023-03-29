@@ -1,16 +1,25 @@
 package hello.core.order;
 
 import hello.core.discount.DiscountPolicy;
-import hello.core.discount.FixDiscountPolicy;
-import hello.core.discount.RateDiscountPolicy;
 import hello.core.member.Member;
 import hello.core.member.MemberRepository;
 import hello.core.member.MemoryMemberRepository;
 
 public class OrderServiceImpl implements OrderService{
-    private final MemberRepository memberRepository = new MemoryMemberRepository();
+    private final MemberRepository memberRepository;
+
+    /* 추상화(인터페이스), 구체클래스(할인 정책 구현 클래스) 모두 의존 하기 때문에 DIP , OCP 위반
 //    private final DiscountPolicy discountPolicy = new FixDiscountPolicy();
-    private final DiscountPolicy discountPolicy = new RateDiscountPolicy();
+//    private final DiscountPolicy discountPolicy = new RateDiscountPolicy();
+     */
+
+    private final DiscountPolicy discountPolicy;
+
+    public OrderServiceImpl(MemberRepository memberRepository, DiscountPolicy discountPolicy) {
+        this.memberRepository = memberRepository;
+        this.discountPolicy = discountPolicy;
+    }
+    // 대입된 것이 없으므로 Null pointer Exception 발생 -> DIP를 위반하지 않을려면 누군가가 대신 주입 해주어야 한다.
 
 
     @Override

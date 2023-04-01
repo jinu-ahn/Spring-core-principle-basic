@@ -1,5 +1,8 @@
 package hello.core;
 
+import hello.core.member.MemberRepository;
+import hello.core.member.MemoryMemberRepository;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
@@ -11,12 +14,12 @@ import org.springframework.context.annotation.FilterType;
         AppConfig, TestConfig 등 앞서 만들어두었던 설정 정보도 함께 등록되고, 실행되어 버린다.
         그렇기 때문에 @Configuration이 붙은 클래스는 컴포넌트스캔에서 제외하기 위해 설정했다.
          */
-        excludeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = Configuration.class),
-        // basePackages의 하위 패키지를 모두 탐색한다.
-        basePackages = "hello.core.member"
-
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = Configuration.class)
 )
 
 public class AutoAppConfig {
-
+    @Bean(name = "memoryMemberRepository")
+    MemberRepository memberRepository() {
+        return new MemoryMemberRepository();
+    }
 }

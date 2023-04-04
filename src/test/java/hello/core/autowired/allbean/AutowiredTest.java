@@ -1,4 +1,4 @@
-package hello.core.autowired;
+package hello.core.autowired.allbean;
 
 import hello.core.member.Member;
 import jakarta.annotation.Nullable;

@@ -80,8 +80,6 @@ But 한계로는
 </div>
 </details>
 
-------
-
 <details>
 <summary><h2>객체지향 원리적용</h2></summary>
 <div markdown="1">

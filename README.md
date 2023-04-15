@@ -165,3 +165,256 @@ AppConfig는 생성한 객체 인스턴스의 참조(레퍼런스)를 생성자�
 - AppConfig가 의존관계인 할인 정책을 변경해서 클라이언트 코드에 주입하므로 클라이언트 코드는 변경하지 않아도 된다.
 </div>
 </details>
+
+<details>
+<summary><h2>객체지향 원리적용</h2></summary>
+<div markdown="1">
+  
+## 스프링 컨테이너 생성
+  
+```java
+//스프링 컨테이너 생성
+ApplicationContext applicationContext =
+        new AnnotationConfigApplicationContext(AppConfig.class);
+```
+
+> - ApplicationContext 를 스프링 컨테이너 이며 인터페이스이다.  
+> - 스프링 컨테이너는 XML을 기반으로 만들 수 있고, 애노테이션 기반의 자바 설정 클래스로 만들 수 있다.  
+> - new AnnotationConfigApplicationContext(AppConfig.class) 클래스는 ApplicationContext 인터페이스의 구현체이다.
+
++더 정확히는 스프링 컨테이너를 부를 때 BeanFactory , ApplicationContext 로 구분해서
+이야기하는데, BeanFactory 를 직접 사용하는 경우는 거의 없으므로 일반적으로 ApplicationContext 를 스프링 컨테이너라 부른다.
+
+![](https://velog.velcdn.com/images/ahn_s/post/3bd3478c-b75b-4584-94d1-4cfdd4fd8197/image.png)
+
+**❗❗주의!** : 빈 이름은 항상 다른 이름을 부여해야 한다. 같은 이름을 부여하면, 다른 빈이 무시되거나, 기존 빈을 덮어버리거나 설정에 따라 오류가 발생한다.
+
+---
+## 스프링 컨테이너에서 데이터 조회
+
+- 컨테이너에 등록된 모든 빈 조회하기
+```java
+public class ApplicationContextInfoTest {
+
+    AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(AppConfig.class);
+
+    /*
+    * ac.getBeanDefinitionNames() : 스프링에 등록된 모든 빈 이름을 조회한다.
+    * ac.getBean() : 빈 이름으로 빈 객체(인스턴스)를 조회한다.
+    */
+
+    @Test
+    @DisplayName("모든 빈 출력하기")
+    void findAllBean() {
+
+        String[] beanDefinitionNames = ac.getBeanDefinitionNames();
+        for (String beanDefinitionName : beanDefinitionNames) {
+            Object bean = ac.getBean(beanDefinitionName);
+            System.out.println("name=" + beanDefinitionName + " object=" + bean);
+        }
+    }
+
+    @Test
+    @DisplayName("애플리케이션 빈 출력하기")
+    void findApplicationBean() {
+        String[] beanDefinitionNames = ac.getBeanDefinitionNames();
+        for (String beanDefinitionName : beanDefinitionNames) {
+            BeanDefinition beanDefinition = ac.getBeanDefinition(beanDefinitionName);
+
+            //Role ROLE_APPLICATION : 직접 등록한 애플리케이션 빈
+            //Role ROLE_INFRASTRUCTURE : 스프링이 내부에서 사용하는 빈
+
+            if(beanDefinition.getRole() == BeanDefinition.ROLE_APPLICATION) {
+                Object bean = ac.getBean(beanDefinitionName);
+                System.out.println("name=" + beanDefinitionName + " object=" + bean);
+            }
+
+        }
+    }
+}
+```
+---
+- 스프링 빈 조회 - 기본
+스프링 컨테이너에서 스프링 빈을 찾는 가장 기본적인 조회 방법
+   - ac.getBean(빈이름, 타입)
+   - ac.getBean(타입)
+   
+```java
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ApplicationContextBasicFindTest {
+    AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(AppConfig.class);
+
+    @Test
+    @DisplayName("빈 이름으로 조회")
+    void findBeanByName() {
+        MemberService memberService = ac.getBean("memberService", MemberService.class);
+        //memberService가 MemberServiceImpl의 인스턴스 이면 성공
+        assertThat(memberService).isInstanceOf(MemberServiceImpl.class);
+    }
+
+    @Test
+    @DisplayName("이름 없이 타입으로만 조회")
+    void findBeanByType() {
+        MemberService memberService = ac.getBean(MemberService.class);
+        assertThat(memberService).isInstanceOf(MemberServiceImpl.class);
+    }
+
+    // 구체타입으로 조회하면 유연성이 떨어진다.
+    @Test
+    @DisplayName("구체 타입으로 조회")
+    void findBeanByName2() {
+        MemberService memberService = ac.getBean("memberService", MemberServiceImpl.class);
+        assertThat(memberService).isInstanceOf(MemberServiceImpl.class);
+    }
+
+    @Test
+    @DisplayName("빈 이름으로 조회 실패")
+    void findBeanByNameFail() {
+        //ac.getBean("xxxx",MemberService.class);
+        assertThrows(NoSuchBeanDefinitionException.class,
+                () -> ac.getBean("xxxx", MemberService.class));
+
+    }
+}
+```
+---
+- 스프링 빈 조회 - 동일한 타입이 둘 이상
+   - 타입으로 조회시 같은 타입의 스프링 빈이 둘 이상이면 오류가 발생한다. 이때는 빈 이름을 지정하자.
+   - ac.getBeansOfType() 을 사용하면 해당 타입의 모든 빈을 조회할 수 있다.
+   
+```java
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+public class ApplicationContextSameBeanFindTest {
+    AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(SameBeanConfig.class);
+
+    @Test
+    @DisplayName("타입으로 조회시 같은 타입이 둘 이상 있으면, 중복 오류가 발생한다.")
+    void findBeanByTypeDuplicate() {
+        assertThrows(NoUniqueBeanDefinitionException.class,
+                () -> ac.getBean(MemberRepository.class));
+    }
+
+    @Test
+    @DisplayName("타입으로 조회시 같은 타입이 둘 이상 있으면, 빈 이름을 지정하면 된다.")
+    void findBeanByName() {
+        MemberRepository memberRepository = ac.getBean("memberRepository1",MemberRepository.class);
+        assertThat(memberRepository).isInstanceOf(MemberRepository.class);
+    }
+
+    @Test
+    @DisplayName("특정 타입을 모두 조회하기")
+    void findAllBeanByType() {
+        Map<String, MemberRepository> beansOfType = ac.getBeansOfType(MemberRepository.class);
+
+        for (String key : beansOfType.keySet()) {
+            System.out.println("key = " + key + " value = " + beansOfType.get(key));
+        }
+        System.out.println("beansOfType = " + beansOfType);
+        assertThat(beansOfType.size()).isEqualTo(2);
+    }
+
+    @Configuration
+    static class SameBeanConfig {
+        @Bean
+        public MemberRepository memberRepository1() {
+            return new MemoryMemberRepository();
+        }
+
+        @Bean
+        public MemberRepository memberRepository2() {
+            return new MemoryMemberRepository();
+        }
+    }
+}
+
+```
+---
+- 스프링 빈 조회 - 상속관계
+   - 부모 타입으로 조회하면, 자식 타입도 함께 조회한다.
+   - 그래서 모든 자바 객체의 최고 부모인 Object 타입으로 조회하면, 모든 스프링 빈을 조회한다.
+![](https://velog.velcdn.com/images/ahn_s/post/2029933e-32a9-4ece-924f-fd3827669de4/image.png)
+```java
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+public class ApplicationContextExtendsFindTest {
+    AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(TestConfig.class);
+
+    @Test
+    @DisplayName("부모 타입으로 조회시, 자식이 둘 이상 있으면, 중복 오류가 발생한다.")
+    void findBeanByParentTypeDuplicate() {
+        assertThrows(NoUniqueBeanDefinitionException.class,
+                () -> ac.getBean(DiscountPolicy.class));
+    }
+
+    @Test
+    @DisplayName("부모 타입으로 조회시, 자식이 둘 이상 있으면, 빈 이름을 지정하면 된다.")
+    void findBeanByParentTypeName() {
+        DiscountPolicy rateDiscountPolicy = ac.getBean("rateDiscountPolicy", DiscountPolicy.class);
+        assertThat(rateDiscountPolicy).isInstanceOf(RateDiscountPolicy.class);
+    }
+
+    @Test
+    @DisplayName("특정 하위 타입으로 조회")
+    void findBeanBySubType() {
+        RateDiscountPolicy bean = ac.getBean(RateDiscountPolicy.class);
+        assertThat(bean).isInstanceOf(RateDiscountPolicy.class);
+    }
+
+    @Test
+    @DisplayName("부모 타입으로 모두 조회하기")
+    void findAllBeanByParentType() {
+        Map<String, DiscountPolicy> beansOfType = ac.getBeansOfType(DiscountPolicy.class);
+        for (String key : beansOfType.keySet()) {
+            System.out.println("key = " + key + " value = " + beansOfType.get(key));
+        }
+    }
+    
+    @Test
+    @DisplayName("부모 타입으로 모두 조회하기 - Object")
+    void findAllBeanByObjectType() {
+        Map<String, Object> beansOfType = ac.getBeansOfType(Object.class);
+        for (String key : beansOfType.keySet()) {
+            System.out.println("key = " + key + " value = " + beansOfType.get(key));
+        }
+    }
+    @Configuration
+    static class TestConfig {
+        @Bean
+        public DiscountPolicy rateDiscountPolicy() {
+            return new RateDiscountPolicy();
+        }
+        @Bean
+        public DiscountPolicy fixDiscountPolicy() {
+            return new FixDiscountPolicy();
+        }
+    }
+}
+```
+---
+## BeanFactory와 ApplicationContext
+
+> "BeanFactory"
+- 스프링 컨테이너의 최상위 인터페이스로 빈을 관리하고 조회하는 역할을 담당한다
+
+> "ApplicationContext
+- BeanFactory 기능을 모두 상속받아서 제공한다.
+
+![](https://velog.velcdn.com/images/ahn_s/post/1aee564a-cc06-460f-a9bf-628928259fa2/image.png)
+
+> - 메시지소스를 활용한 국제화 기능
+   - 예를 들어서 한국에서 들어오면 한국어로, 영어권에서 들어오면 영어로 출력
+> - 환경변수
+   - 로컬, 개발, 운영등을 구분해서 처리
+> - 애플리케이션 이벤트
+   - 이벤트를 발행하고 구독하는 모델을 편리하게 지원
+> - 편리한 리소스 조회
+   - 파일, 클래스패스, 외부 등에서 리소스를 편리하게 조회
+
+ 
+</div>
+</details>

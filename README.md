@@ -167,7 +167,7 @@ AppConfig는 생성한 객체 인스턴스의 참조(레퍼런스)를 생성자�
 </details>
 
 <details>
-<summary><h2>객체지향 원리적용</h2></summary>
+<summary><h2>스프링 </h2></summary>
 <div markdown="1">
   
 ## 스프링 컨테이너 생성

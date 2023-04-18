@@ -688,3 +688,73 @@ memberRepository() 처럼 의존관계 주입이 필요해서 메서드를 직�
  
 </div>
 </details>
+
+<details>
+<summary><h2>컴포넌트 스캔</h2></summary>
+<div markdown="1">
+
+## 컴포넌트 스캔과 의존관계 자동 주입
+
+- @ComponentScan : @Component 어노테이션이 붙은 클래스를 찾아서 자동으로 스프링 빈으로 등록을 시켜준다.
+   - 이때 스프링 빈의 기본 이름은 클래스명을 사용하되 맨 앞글자만 소문자를 사용한다.
+   (ex) MemberServiceImpl클래스 -> memberServiceImpl
+
+- @Autowired : 생성자에 @Autowired를 지정하면, 스프링 컨테이너가 자동으로 해당 스프링 빈을 찾아서 주입한다.
+   - ac.getBean(MemberService.class)와 동일
+   
+---
+
+## 탐색 위치와 기본 스캔 대상
+- 컴포넌트 스캔이 필요한 위치부터 탐색하도록 시작 위치를 지정할 수 있다.
+```java
+@ComponentScan(
+basePackages = "hello.core",
+)
+```
+- basePackages 의 하위 패키지를 모두 탐색한다.
+   - ex) "hello.core.member" = member 패키지 부터 하위패키지들을 찾는다. (member만 컴포넌트 스캔에 대상이 된다.)
+- 만약 지정하지 않으면 @ComponentScan 이 붙은 설정 정보 클래스의 패키지가 시작 위치가 된다.
+   - 권장 : 패키지 위치를 지정하지 않고, 설정 정보 클래스의 위치를 프로젝트 최상단에 두는 것이다.
+      - 프로젝트 시작 루트, 여기에 AppConfig 같은 메인 설정 정보를 두고, @ComponentScan 애노테이션을 붙이고, basePackages 지정은 생략한다.
+      
+> - 컴포넌트 스캔의 기본 대상
+   - @Component : 컴포넌트 스캔에서 사용
+   - @Controlller : 스프링 MVC 컨트롤러에서 사용
+   - @Service : 스프링 비즈니스 로직에서 사용
+   - @Repository : 스프링 데이터 접근 계층에서 사용
+   - @Configuration : 스프링 설정 정보에서 사용
+   
+---
+## 필터
+- includeFilters : 컴포넌트 스캔 대상을 추가로 지정한다.
+- excludeFilters : 컴포넌트 스캔에서 제외할 대상을 지정한다.
+
+- includeFilters
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface MyIncludeComponent {
+}
+```
+
+- excludeFilters
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface MyExcludeComponent {
+}
+```
+
+```java
+@ComponentScan(
+includeFilters = @Filter(type = FilterType.ANNOTATION, classes =
+MyIncludeComponent.class),
+excludeFilters = @Filter(type = FilterType.ANNOTATION, classes =
+MyExcludeComponent.class)
+)
+```
+>❗Component 면 충분하기 때문에, includeFilters 를 사용할 일은 거의 없다. excludeFilters 는 여러가지 이유로 간혹 사용할 때가 있지만 많지는 않다. 옵션을 변경하면서 사용하기 보다는 스프링의 기본 설정에 최대한 맞추어 사용하는 것을 권장한다.
+</div>
+</details>
